@@ -1,0 +1,16 @@
+# Rebuilt by `python main.py`
+data/olist.db
+powerbi/sales.csv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*.xlsx

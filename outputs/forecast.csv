@@ -1,0 +1,4 @@
+month,months_ahead,forecast,low,high,method
+2018-09,1,838576.64,789939.19,887214.09,Naive (last month)
+2018-10,2,838576.64,769813.36,907339.92,Naive (last month)
+2018-11,3,838576.64,720337.33,956815.95,Naive (last month)

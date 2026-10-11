@@ -1,0 +1,14 @@
+step,rows
+Raw rows: orders,99441
+Raw rows: order items,112650
+Raw rows: customers,99441
+Raw rows: products,32951
+Raw rows: payments,103886
+Duplicate rows found across all files,0
+Order date columns converted from text to dates,4
+"Products with no category, labelled 'Unknown'",610
+Products whose category had no English name (added by hand),13
+Payment rows removed (type 'not_defined' or value 0),9
+"Delivered orders with no delivery date (kept, flagged)",8
+"Orders not delivered (cancelled, unavailable, in progress) - excluded from revenue",2963
+Orders outside Jan 2017 - Aug 2018 (incomplete months) - excluded from revenue,349

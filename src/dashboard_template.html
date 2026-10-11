@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-commerce Revenue Dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --accent: #2a78d6;
+    --muted-mark: #b4b2a9;
+    --band: rgba(137, 135, 129, 0.16);
+    --good-text: #006300;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --border: rgba(255, 255, 255, 0.10);
+      --accent: #3987e5;
+      --muted-mark: #6b6a65;
+      --band: rgba(195, 194, 183, 0.14);
+      --good-text: #0ca30c;
+      --critical: #e66767;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --accent: #3987e5;
+    --muted-mark: #6b6a65;
+    --band: rgba(195, 194, 183, 0.14);
+    --good-text: #0ca30c;
+    --critical: #e66767;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.45;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 48px; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; align-items: end; }
+  h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -0.01em; }
+  .sub { margin: 4px 0 0; color: var(--text-secondary); }
+  .badge { font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .badge a { color: inherit; }
+
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    margin: 22px 0 18px; padding: 12px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  .filter-label { font-size: 12px; color: var(--text-muted); margin-right: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 8px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 13px; padding: 5px 12px; border: 0; background: var(--surface); color: var(--text-secondary); cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--axis); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  select { font: inherit; font-size: 13px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 5px 8px; }
+  .reset { font: inherit; font-size: 13px; background: none; border: none; color: var(--accent); cursor: pointer; padding: 4px; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .kpi .label { font-size: 12px; color: var(--text-secondary); }
+  .kpi .value { font-size: 26px; font-weight: 650; margin-top: 2px; letter-spacing: -0.01em; }
+  .kpi .note { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 16px 8px; min-width: 0; }
+  .card.full { grid-column: 1 / -1; }
+  .card h2 { margin: 0; font-size: 15px; font-weight: 600; }
+  .card .desc { margin: 2px 0 6px; color: var(--text-secondary); font-size: 13px; }
+  .chart { width: 100%; height: 300px; }
+  .chart.tall { height: 360px; }
+  .chart.short { height: 220px; }
+  .note-line { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 12px; }
+  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-muted); font-weight: 500; font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+  td { font-variant-numeric: tabular-nums; }
+  .win { color: var(--good-text); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 10px 0 14px; }
+  .stat { border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .stat .value { font-size: 22px; font-weight: 650; }
+  .stat .label { font-size: 12px; color: var(--text-secondary); }
+
+  .insights ol { margin: 8px 0 12px; padding-left: 20px; }
+  .insights li { margin-bottom: 6px; color: var(--text-secondary); }
+  .insights li strong { color: var(--text-primary); font-weight: 600; }
+  footer { margin-top: 24px; font-size: 12px; color: var(--text-muted); }
+  footer a { color: inherit; }
+
+  @media (max-width: 980px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 720px) {
+    .wrap { padding: 20px 16px 40px; }
+    .grid { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .kpi .value { font-size: 22px; }
+    .stats { grid-template-columns: 1fr; }
+  }
+</style>
+<script>__PLOTLY_JS__</script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>E-commerce Revenue Analysis &amp; Forecast</h1>
+      <p class="sub">Olist marketplace, Brazil &middot; Jan 2017&ndash;Aug 2018 &middot; delivered orders &middot; forecast to Nov 2018</p>
+    </div>
+    <span class="badge">Real data &middot; <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Olist dataset</a> &middot; amounts in R$</span>
+  </header>
+
+  <section class="filters" aria-label="Filters">
+    <div class="group">
+      <span class="filter-label">Year</span>
+      <div class="seg" id="yearSeg" role="group" aria-label="Year">
+        <button type="button" data-year="all" aria-pressed="true">All</button>
+        <button type="button" data-year="2017" aria-pressed="false">2017</button>
+        <button type="button" data-year="2018" aria-pressed="false">2018 (Jan&ndash;Aug)</button>
+      </div>
+    </div>
+    <div class="group">
+      <span class="filter-label">State</span>
+      <select id="stateSel" aria-label="Customer state"><option value="all">All 27 states</option></select>
+    </div>
+    <button class="reset" id="resetBtn" type="button">Reset filters</button>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Key metrics"></section>
+
+  <section class="grid">
+    <div class="card full">
+      <h2 id="trendTitle">Monthly revenue and 3-month forecast</h2>
+      <p class="desc" id="trendDesc"></p>
+      <div class="chart tall" id="trendChart"></div>
+    </div>
+    <div class="card">
+      <h2>Top 10 categories by revenue</h2>
+      <p class="desc">Label = revenue &middot; share of total.</p>
+      <div class="chart tall" id="catChart"></div>
+    </div>
+    <div class="card">
+      <h2>Top 10 states by revenue</h2>
+      <p class="desc">Brazilian state codes, e.g. SP = S&atilde;o Paulo.</p>
+      <div class="chart tall" id="stateChart"></div>
+    </div>
+    <div class="card">
+      <h2>Revenue by day of week</h2>
+      <p class="desc">Share of revenue placed on each weekday.</p>
+      <div class="chart" id="weekdayChart"></div>
+    </div>
+    <div class="card">
+      <h2>How customers pay</h2>
+      <p class="desc">Share of money paid, whole period. Credit cards are often split into instalments.</p>
+      <div class="chart" id="payChart"></div>
+    </div>
+    <div class="card">
+      <h2>Do customers come back?</h2>
+      <p class="desc">Customers grouped by how many orders they placed, whole period.</p>
+      <div class="stats" id="loyaltyStats"></div>
+      <p class="note-line">Almost all revenue comes from first-time buyers, so a second-purchase campaign is the biggest untapped lever.</p>
+    </div>
+    <div class="card">
+      <h2>Which forecast method to trust?</h2>
+      <p class="desc">Each method forecast Mar&ndash;Aug 2018 from 1, 2 and 3 months earlier. Lower error wins.</p>
+      <div class="table-wrap"><table id="scoreTable"></table></div>
+      <div class="table-wrap"><table id="forecastTable"></table></div>
+    </div>
+    <div class="card full insights">
+      <h2>Key findings (all states, Jan 2017 &ndash; Aug 2018)</h2>
+      <ol>__INSIGHTS__</ol>
+    </div>
+  </section>
+
+  <footer>Built by Ayush Raghav with Python, SQL (SQLite) and Plotly. Data: <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Brazilian E-Commerce Public Dataset by Olist</a> (CC BY-NC-SA 4.0). Revenue = item prices of delivered orders, freight excluded.</footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+const state = { year: "all", st: "all" };
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const div = (a, b) => (b ? a / b : 0);
+function money(x) {
+  if (Math.abs(x) >= 1e6) return "R$" + (x / 1e6).toFixed(2) + "M";
+  if (Math.abs(x) >= 1e3) return "R$" + (x / 1e3).toFixed(1) + "K";
+  return "R$" + Math.round(x).toLocaleString("en-US");
+}
+const monthLabel = m => new Date(m + "-01T00:00:00").toLocaleString("en-US", { month: "short", year: "2-digit" });
+
+const monthOk = i => state.year === "all" || DATA.months[i].startsWith(state.year);
+const stateOk = s => state.st === "all" || DATA.states[s] === state.st;
+
+// ms rows: [month, state, revenue, orders, items, freight]
+function totals(rows) {
+  const t = { revenue: 0, orders: 0, items: 0, freight: 0 };
+  for (const r of rows) { t.revenue += r[2]; t.orders += r[3]; t.items += r[4]; t.freight += r[5]; }
+  t.aov = div(t.revenue, t.orders); t.ipo = div(t.items, t.orders); t.fpct = 100 * div(t.freight, t.revenue);
+  return t;
+}
+function sumBy(rows, keyFn, valFn) {
+  const m = new Map();
+  for (const r of rows) { const k = keyFn(r); m.set(k, (m.get(k) || 0) + valFn(r)); }
+  return m;
+}
+
+function baseLayout(extra = {}) {
+  return Object.assign({
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif", size: 12, color: css("--text-secondary") },
+    margin: { l: 56, r: 16, t: 8, b: 40 },
+    hoverlabel: { bgcolor: css("--surface"), bordercolor: css("--axis"), font: { color: css("--text-primary") } },
+    xaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zerolinecolor: css("--axis"), tickfont: { color: css("--text-muted") } },
+    yaxis: { gridcolor: css("--grid"), linecolor: css("--axis"), zerolinecolor: css("--axis"), tickfont: { color: css("--text-muted") } },
+    showlegend: false, bargap: 0.45,
+  }, extra);
+}
+const CONFIG = { displayModeBar: false, responsive: true };
+
+function renderKpis(t) {
+  const tiles = [
+    ["Revenue", money(t.revenue), "item sales, delivered orders"],
+    ["Orders", Math.round(t.orders).toLocaleString("en-US"), "delivered"],
+    ["Avg order value", "R$" + t.aov.toFixed(0), "revenue ÷ orders"],
+    ["Items per order", t.ipo.toFixed(2), Math.round(t.items).toLocaleString("en-US") + " items sold"],
+    ["Freight", t.fpct.toFixed(1) + "%", "of revenue, paid on top"],
+  ];
+  document.getElementById("kpis").innerHTML = tiles.map(([l, v, n]) =>
+    `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join("");
+}
+
+function renderTrend(msRows) {
+  const idx = DATA.months.map((_, i) => i).filter(monthOk);
+  const byM = sumBy(msRows, r => r[0], r => r[2]);
+  const x = idx.map(i => DATA.months[i]);
+  const y = idx.map(i => byM.get(i) || 0);
+  const showForecast = state.st === "all" && state.year !== "2017";
+  const traces = [{
+    type: "scatter", mode: "lines+markers", name: "Actual revenue", x: x.map(monthLabel), y,
+    line: { color: css("--accent"), width: 2 }, marker: { color: css("--accent"), size: 7, line: { color: css("--surface"), width: 2 } },
+    hovertemplate: "%{x}: %{customdata}<extra>Actual</extra>", customdata: y.map(money),
+  }];
+  const shapes = [], annotations = [];
+  if (showForecast) {
+    const f = DATA.forecast, lastX = monthLabel(x.at(-1)), lastY = y.at(-1);
+    const fx = f.map(r => monthLabel(r.month));
+    traces.push({ type: "scatter", mode: "lines", x: [lastX, ...fx], y: [lastY, ...f.map(r => r.high)], line: { width: 0 }, hoverinfo: "skip", showlegend: false });
+    traces.push({ type: "scatter", mode: "lines", name: "Forecast range", x: [lastX, ...fx], y: [lastY, ...f.map(r => r.low)], fill: "tonexty", fillcolor: css("--band"), line: { width: 0 }, hoverinfo: "skip" });
+    traces.push({
+      type: "scatter", mode: "lines+markers", name: "Forecast", x: [lastX, ...fx], y: [lastY, ...f.map(r => r.forecast)],
+      line: { color: css("--text-muted"), width: 2, dash: "dash" }, marker: { color: css("--text-muted"), size: 7 },
+      customdata: [["", "", ""], ...f.map(r => [money(r.forecast), money(r.low), money(r.high)])],
+      hovertemplate: "%{x}: %{customdata[0]}<br>range %{customdata[1]} – %{customdata[2]}<extra>Forecast</extra>",
+    });
+    annotations.push({ x: fx.at(-1), y: f.at(-1).high, text: "forecast range", showarrow: false, yshift: 12, font: { size: 11, color: css("--text-muted") } });
+  }
+  const bf = DATA.blackFriday, bfi = x.indexOf(bf.month);
+  if (bfi >= 0 && state.st === "all") {
+    annotations.push({ x: monthLabel(bf.month), y: y[bfi], text: `Black Friday +${bf.growth.toFixed(0)}%`, showarrow: true, arrowhead: 0, ax: 0, ay: -28, arrowcolor: css("--axis"), font: { size: 11, color: css("--text-primary") } });
+  }
+  document.getElementById("trendDesc").textContent = showForecast
+    ? `Grey dashed line = forecast from the most accurate backtested method: ${DATA.bestMethod}. Shaded band = likely range.`
+    : "Forecast shown only for all states with 2018 included.";
+  Plotly.react("trendChart", traces, baseLayout({
+    showlegend: true, legend: { orientation: "h", x: 0, y: 1.02, yanchor: "bottom", font: { color: css("--text-secondary") } },
+    margin: { l: 64, r: 24, t: 36, b: 40 }, hovermode: "closest",
+    yaxis: { ...baseLayout().yaxis, rangemode: "tozero", tickprefix: "R$", tickformat: "~s" },
+    annotations, shapes,
+  }), CONFIG);
+}
+
+function renderHBars(el, map, labelFn, total) {
+  const top = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).reverse();
+  const names = top.map(([k]) => labelFn(k)), vals = top.map(([, v]) => v);
+  Plotly.react(el, [{
+    type: "bar", orientation: "h", y: names, x: vals, marker: { color: css("--accent"), cornerradius: 3 },
+    text: vals.map(v => `${money(v)} · ${(100 * div(v, total)).toFixed(1)}%`), textposition: "outside", cliponaxis: false,
+    textfont: { color: css("--text-primary"), size: 11 },
+    hovertemplate: "%{y}: %{text}<extra></extra>",
+  }], baseLayout({
+    margin: { l: 150, r: 110, t: 4, b: 24 }, bargap: 0.35,
+    xaxis: { ...baseLayout().xaxis, showticklabels: false, showgrid: false, zeroline: false },
+    yaxis: { ...baseLayout().yaxis, gridcolor: "rgba(0,0,0,0)", tickfont: { color: css("--text-secondary") } },
+  }), CONFIG);
+}
+
+function renderWeekday(rows) {
+  const byW = sumBy(rows, r => r[2], r => r[3]);
+  const total = [...byW.values()].reduce((a, b) => a + b, 0);
+  const order = [1, 2, 3, 4, 5, 6, 0], names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const vals = order.map(w => 100 * div(byW.get(w) || 0, total));
+  Plotly.react("weekdayChart", [{
+    type: "bar", x: names, y: vals, marker: { color: css("--accent"), cornerradius: 3 },
+    text: vals.map(v => v.toFixed(1) + "%"), textposition: "outside", cliponaxis: false, textfont: { color: css("--text-primary"), size: 11 },
+    hovertemplate: "%{x}: %{y:.1f}% of revenue<extra></extra>",
+  }], baseLayout({ margin: { l: 44, r: 12, t: 16, b: 32 }, yaxis: { ...baseLayout().yaxis, ticksuffix: "%", rangemode: "tozero" } }), CONFIG);
+}
+
+function renderStatic() {
+  const p = DATA.payments.slice().reverse();
+  Plotly.react("payChart", [{
+    type: "bar", orientation: "h", y: p.map(r => r.payment_type), x: p.map(r => r.share_pct),
+    marker: { color: css("--accent"), cornerradius: 3 },
+    text: p.map(r => r.share_pct.toFixed(1) + "%"), textposition: "outside", cliponaxis: false, textfont: { color: css("--text-primary"), size: 11 },
+    customdata: p.map(r => [money(r.amount_paid), r.avg_installments]),
+    hovertemplate: "%{y}: %{x:.1f}% (%{customdata[0]}), avg %{customdata[1]} instalments<extra></extra>",
+  }], baseLayout({ margin: { l: 90, r: 56, t: 4, b: 24 }, bargap: 0.4,
+    xaxis: { ...baseLayout().xaxis, showticklabels: false, showgrid: false, zeroline: false },
+    yaxis: { ...baseLayout().yaxis, gridcolor: "rgba(0,0,0,0)", tickfont: { color: css("--text-secondary") } } }), CONFIG);
+
+  const L = Object.fromEntries(DATA.loyalty.map(r => [r.customer_group, r]));
+  const once = L["1 order"], repeatC = 100 - once.customers_pct, repeatR = 100 - once.revenue_pct;
+  document.getElementById("loyaltyStats").innerHTML = [
+    [once.customers_pct.toFixed(1) + "%", "of customers ordered only once"],
+    [repeatC.toFixed(1) + "%", "came back for a 2nd order or more"],
+    [repeatR.toFixed(1) + "%", "of revenue came from repeat buyers"],
+  ].map(([v, l]) => `<div class="stat"><div class="value">${v}</div><div class="label">${l}</div></div>`).join("");
+
+  document.getElementById("scoreTable").innerHTML =
+    "<thead><tr><th>Method</th><th>1 mo ahead</th><th>2 mo</th><th>3 mo</th><th>Avg error</th></tr></thead><tbody>" +
+    DATA.scores.map((r, i) => `<tr><td class="${i === 0 ? "win" : ""}">${i === 0 ? "✓ " : ""}${r.method}</td><td>${r.mape_1_month_ahead}%</td><td>${r.mape_2_month_ahead}%</td><td>${r.mape_3_month_ahead}%</td><td class="${i === 0 ? "win" : ""}">${r.mape_pct}%</td></tr>`).join("") + "</tbody>";
+  document.getElementById("forecastTable").innerHTML =
+    "<thead><tr><th>Forecast month</th><th>Expected revenue</th><th>Likely range</th></tr></thead><tbody>" +
+    DATA.forecast.map(r => `<tr><td>${new Date(r.month + "-01T00:00:00").toLocaleString("en-US", { month: "long", year: "numeric" })}</td><td>${money(r.forecast)}</td><td>${money(r.low)} – ${money(r.high)}</td></tr>`).join("") + "</tbody>";
+}
+
+function render() {
+  const ms = DATA.ms.filter(r => monthOk(r[0]) && stateOk(r[1]));
+  const msTrend = DATA.ms.filter(r => stateOk(r[1]));
+  const msc = DATA.msc.filter(r => monthOk(r[0]) && stateOk(r[1]));
+  const msw = DATA.msw.filter(r => monthOk(r[0]) && stateOk(r[1]));
+  const t = totals(ms);
+  renderKpis(t);
+  renderTrend(msTrend);
+  renderHBars("catChart", sumBy(msc, r => r[2], r => r[3]), k => DATA.categories[k], t.revenue);
+  const allStates = DATA.ms.filter(r => monthOk(r[0]));
+  const stTotal = allStates.reduce((s, r) => s + r[2], 0);
+  renderHBars("stateChart", sumBy(allStates, r => r[1], r => r[2]), k => DATA.states[k], stTotal);
+  renderWeekday(msw);
+  renderStatic();
+}
+
+document.querySelectorAll("#yearSeg button").forEach(b => b.addEventListener("click", () => {
+  state.year = b.dataset.year;
+  document.querySelectorAll("#yearSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  render();
+}));
+const sel = document.getElementById("stateSel");
+DATA.states.slice().sort().forEach(s => sel.add(new Option(s, s)));
+sel.addEventListener("change", () => { state.st = sel.value; render(); });
+document.getElementById("resetBtn").addEventListener("click", () => {
+  state.year = "all"; state.st = "all"; sel.value = "all";
+  document.querySelectorAll("#yearSeg button").forEach(x => x.setAttribute("aria-pressed", x.dataset.year === "all"));
+  render();
+});
+
+render();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+</script>
+</body>
+</html>
